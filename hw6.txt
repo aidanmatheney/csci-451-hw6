@@ -1,0 +1,40 @@
+HW-6	CS451	10 points	Due: Monday, 10/12/2020
+
+Modify your HW5 such that thread 2 unexpectidly exits 
+and unexpectidly dies. You can do this by modifying the 
+hw5-2.in file as follows:
+
+SAMPLE hw5-2:
+-------------
+1
+2
+3
+4
+5
+& <--- note this added symbol
+6
+7
+8
+
+Case 1 unexpectidly exits:
+--------------------------
+Upon encountering the & symbol, have your thread IMMEDIATELY 
+do a pthread_exit. Do NOT unlock any mutexs!!!!
+
+Case 2 unexpectidly dies:
+--------------------------
+Upon encountering the & symbol, have your thread call system
+("kill -s 9 TID") where TID is the PID of the thread (pthread_self). 
+Do NOT unlock any mutexs!!!!
+
+In both cases you need to analyze what your code did (locked up, 
+kept running, etc). There is no correct answer to this as it will 
+depend on how you wrote your code. What I want to see is a 1 page 
+(min/max) description of what happened in both cases (maybe 1 sentence) 
+and WHY it happened. I.e. how did the design of your synchronization 
+mechanism result in what ever happened? This section needs to be 
+the rest of the page.
+
+REQUIREMENTS:
+-------------
+1. Your must submit a word doc (hw-6-yourname.doc) on the due date.
