@@ -17,6 +17,6 @@ int main(int const argc, char ** const argv) {
         "hw6-2.in",
         "hw6-3.in"
     };
-    hw6(inFilePaths, ARRAY_LENGTH(inFilePaths), "hw6.out");
+    hw6(inFilePaths, ARRAY_LENGTH(inFilePaths), "hw6.out", HW6TestMode_ExitThread);
     return EXIT_SUCCESS;
 }

@@ -1,18 +1,22 @@
 #include "../include/hw6.h"
 
+#include "../include/util/string.h"
 #include "../include/util/memory.h"
 #include "../include/util/thread.h"
 #include "../include/util/file.h"
 #include "../include/util/guard.h"
 
 #include <stdlib.h>
+#include <sys/unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <sys/syscall.h>
 #include <stdio.h>
 #include <assert.h>
 
 struct ReadFileCharactersThreadStartArg {
     char const *inFilePath;
+    enum HW6TestMode testMode;
     bool finished;
     char *characterOutPtr;
 
@@ -31,11 +35,14 @@ static void *readFileCharactersThreadStart(void * const argAsVoidPtr);
  * @param inFilePaths The input file paths.
  * @param inFileCount The number of input files.
  * @param outFilePath The output file path.
+ * @param testMode Whether to kill or exit the current reading thread (or take no action) upon encountering the special
+ *                 test character (&).
  */
 void hw6(
     char const * const * const inFilePaths,
     size_t const inFileCount,
-    char const * const outFilePath
+    char const * const outFilePath,
+    enum HW6TestMode const testMode
 ) {
     guardNotNull(inFilePaths, "inFilePaths", "hw6");
     guardNotNull(outFilePath, "outFilePath", "hw6");
@@ -53,6 +60,7 @@ void hw6(
         struct ReadFileCharactersThreadStartArg * const threadStartArgPtr = &threadStartArgs[i];
 
         threadStartArgPtr->inFilePath = inFilePath;
+        threadStartArgPtr->testMode = testMode;
         threadStartArgPtr->finished = false;
         threadStartArgPtr->characterOutPtr = &readCharacter;
 
@@ -127,6 +135,23 @@ static void *readFileCharactersThreadStart(void * const argAsVoidPtr) {
         safeConditionWait(&argPtr->readCondition, &argPtr->syncMutex, "readFileCharactersThreadStart");
 
         bool const scanned = scanFileExact(inFile, 1, "%c\n", argPtr->characterOutPtr);
+
+        if (scanned && *argPtr->characterOutPtr == '&') {
+            if (argPtr->testMode == HW6TestMode_ExitThread) {
+                pthread_exit(NULL);
+            } else if (argPtr->testMode == HW6TestMode_KillThreadWithPthreadSelf) {
+                pthread_t const threadId = pthread_self();
+                char * const killCommand = formatString("kill -s 9 %lu", threadId);
+                system(killCommand);
+                free(killCommand);
+            } else if (argPtr->testMode == HW6TestMode_KillThreadWithGettid) {
+                pid_t const threadId = (pid_t)syscall(SYS_gettid);
+                char * const killCommand = formatString("kill -s 9 %d", threadId);
+                system(killCommand);
+                free(killCommand);
+            }
+        }
+
         if (!scanned) {
             argPtr->finished = true;
         }
